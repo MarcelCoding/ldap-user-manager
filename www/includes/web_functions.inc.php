@@ -46,7 +46,7 @@ function generate_passkey()
 
 ######################################################
 
-function set_passkey_cookie($user_id, $is_admin)
+function set_passkey_cookie($user_id)
 {
 
     # Create a random value, store it locally and set it in a cookie.
@@ -56,14 +56,9 @@ function set_passkey_cookie($user_id, $is_admin)
 
     $passkey = generate_passkey();
     $this_time = time();
-    $admin_val = 0;
 
-    if ($is_admin == TRUE) {
-        $admin_val = 1;
-        $IS_ADMIN = TRUE;
-    }
     $filename = preg_replace('/[^a-zA-Z0-9]/', '_', $user_id);
-    @ file_put_contents("/tmp/$filename", "$passkey:$admin_val:$this_time");
+    @ file_put_contents("/tmp/$filename", "$passkey:0:$this_time");
     setcookie('orf_cookie', "$user_id:$passkey", $this_time + (60 * $LOGIN_TIMEOUT_MINS), '/', '', '', TRUE);
     if ($SESSION_DEBUG == TRUE) {
         error_log("$log_prefix Session: user $user_id validated (IS_ADMIN=${IS_ADMIN}), sent orf_cookie to the browser.", 0);
@@ -122,76 +117,6 @@ function validate_passkey_cookie()
         }
     } elseif ($SESSION_DEBUG == TRUE) {
         error_log("$log_prefix Session: orf_cookie wasn't sent by the client.", 0);
-    }
-
-}
-
-
-######################################################
-
-function set_setup_cookie()
-{
-
-    # Create a random value, store it locally and set it in a cookie.
-
-    global $LOGIN_TIMEOUT_MINS, $IS_SETUP_ADMIN, $log_prefix, $SESSION_DEBUG;
-
-    $passkey = generate_passkey();
-    $this_time = time();
-
-    $IS_SETUP_ADMIN = TRUE;
-
-    file_put_contents("/tmp/ldap_setup", "$passkey:$this_time");
-# setcookie('setup_cookie', "$passkey", $this_time+(60 * $LOGIN_TIMEOUT_MINS), '/', $_SERVER["HTTP_HOST"]);
-    setcookie('setup_cookie', "$passkey", $this_time + (60 * $LOGIN_TIMEOUT_MINS), '/', '', '', TRUE);
-    if ($SESSION_DEBUG == TRUE) {
-        error_log("$log_prefix Setup session: sent setup_cookie to the client.", 0);
-    }
-
-}
-
-
-######################################################
-
-function validate_setup_cookie()
-{
-
-    global $LOGIN_TIMEOUT_MINS, $IS_SETUP_ADMIN, $log_prefix, $SESSION_DEBUG;
-
-    if (isset($_COOKIE['setup_cookie'])) {
-
-        $c_passkey = $_COOKIE['setup_cookie'];
-        $session_file = file_get_contents("/tmp/ldap_setup");
-        if (!$session_file) {
-            $IS_SETUP_ADMIN = FALSE;
-            if ($SESSION_DEBUG == TRUE) {
-                error_log("$log_prefix Setup session: setup_cookie was sent by the client but the session file wasn't found at /tmp/ldap_setup", 0);
-            }
-        }
-        list($f_passkey, $f_time) = explode(":", $session_file);
-        $this_time = time();
-        if (!empty($c_passkey) and $f_passkey == $c_passkey and $this_time < $f_time + (60 * $LOGIN_TIMEOUT_MINS)) {
-            $IS_SETUP_ADMIN = TRUE;
-            if ($SESSION_DEBUG == TRUE) {
-                error_log("$log_prefix Setup session: Cookie and session file values match - VALIDATED ", 0);
-            }
-            set_setup_cookie();
-        } elseif ($SESSION_DEBUG == TRUE) {
-            $this_error = "$log_prefix Setup session: setup_cookie was sent by the client and the session file was found at /tmp/ldap_setup, but";
-            if ($this_time < $f_time + (60 * $LOGIN_TIMEOUT_MINS)) {
-                $this_error .= " the timestamp was older than the login timeout ($LOGIN_TIMEOUT_MINS);";
-            }
-            if (empty($c_passkey)) {
-                $this_error .= " the cookie passkey wasn't set;";
-            }
-            if ($c_passkey != $f_passkey) {
-                $this_error .= " the session file passkey didn't match the cookie passkey;";
-            }
-            $this_error += " Cookie: ${_COOKIE['setup_cookie']} - Session file contents: $session_file";
-            error_log($this_error, 0);
-        }
-    } elseif ($SESSION_DEBUG == TRUE) {
-        error_log("$log_prefix Session: setup_cookie wasn't sent by the client.", 0);
     }
 
 }
@@ -369,110 +294,6 @@ function set_page_access($level)
             exit(0);
         }
     }
-
-}
-
-
-######################################################
-
-function is_valid_email($email)
-{
-
-    return (!filter_var($email, FILTER_VALIDATE_EMAIL)) ? FALSE : TRUE;
-
-}
-
-
-######################################################
-
-function render_js_username_check()
-{
-
-    global $USERNAME_REGEX;
-
-    print <<<EoCheckJS
-
-<script>
-
- function check_entity_name_validity(name,div_id) {
-
-  var check_regex = /$USERNAME_REGEX/;
-
-  if (! check_regex.test(name) ) {
-   document.getElementById(div_id).classList.add("has-error");
-  }
-  else {
-   document.getElementById(div_id).classList.remove("has-error");
-  }
-
- }
-
-</script>
-EoCheckJS;
-
-}
-
-
-######################################################
-
-function render_js_username_generator($firstname_field_id, $lastname_field_id, $username_field_id, $username_div_id)
-{
-
-    #Parameters are the IDs of the input fields and username name div in the account creation form.
-    #The div will be set to warning if the username is invalid.
-
-    global $USERNAME_FORMAT, $USERNAME_REGEX;
-
-    render_js_username_check();
-
-    print <<<EoRenderJS
-<script>
-
- function update_username() {
-
-  var first_name = document.getElementById('$firstname_field_id').value;
-  var last_name  = document.getElementById('$lastname_field_id').value;
-  var template = '$USERNAME_FORMAT';
-
-  var actual_username = template;
-
-  actual_username = actual_username.replace('{first_name}', first_name.toLowerCase() );
-  actual_username = actual_username.replace('{first_name_initial}', first_name.charAt(0).toLowerCase() );
-  actual_username = actual_username.replace('{last_name}', last_name.toLowerCase() );
-  actual_username = actual_username.replace('{last_name_initial}', last_name.charAt(0).toLowerCase() );
-
-  check_entity_name_validity(actual_username,'$username_div_id');
-
-  document.getElementById('$username_field_id').value = actual_username;
-
- }
-</script>
-EoRenderJS;
-
-}
-
-
-######################################################
-
-function render_js_email_generator($username_field_id, $email_field_id)
-{
-
-    global $EMAIL_DOMAIN;
-
-    print <<<EoRenderEmailJS
-<script>
-
- var auto_email_update = true;
-
- function update_email() {
-
-  if ( auto_email_update == true && "$EMAIL_DOMAIN" != ""  ) {
-    var username = document.getElementById('$username_field_id').value;
-    document.getElementById('$email_field_id').value = username + '@' + "$EMAIL_DOMAIN";
-  }
- }
-</script>
-EoRenderEmailJS;
 
 }
 

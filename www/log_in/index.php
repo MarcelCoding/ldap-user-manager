@@ -9,13 +9,12 @@ if (isset($_POST["user_id"]) and isset($_POST["password"])) {
 
     $ldap_connection = open_ldap_connection();
     $user_auth = ldap_auth_username($ldap_connection, $_POST["user_id"], $_POST["password"]);
-    $is_admin = ldap_is_group_member($ldap_connection, $LDAP['admins_group'], $_POST["user_id"]);
 
     ldap_close($ldap_connection);
 
     if ($user_auth != FALSE) {
 
-        set_passkey_cookie($user_auth, $is_admin);
+        set_passkey_cookie($user_auth);
         if (isset($_POST["sendto"])) {
             header("Location: //${_SERVER["HTTP_HOST"]}${_POST["sendto"]}\n\n");
         } else {

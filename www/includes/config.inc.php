@@ -4,7 +4,6 @@
 
 $LDAP['uri'] = getenv('LDAP_URI');
 $LDAP['base_dn'] = getenv('LDAP_BASE_DN');
-$LDAP['admins_group'] = getenv('LDAP_ADMINS_GROUP');
 $LDAP['admin_bind_dn'] = getenv('LDAP_ADMIN_BIND_DN');
 $LDAP['admin_bind_pwd'] = getenv('LDAP_ADMIN_BIND_PWD');
 
@@ -100,9 +99,6 @@ if (empty($LDAP['admin_bind_dn'])) {
 }
 if (empty($LDAP['admin_bind_pwd'])) {
     $errors .= "<div class='alert alert-warning'><p class='text-center'>LDAP_ADMIN_BIND_PWD isn't set</p></div>\n";
-}
-if (empty($LDAP['admins_group'])) {
-    $errors .= "<div class='alert alert-warning'><p class='text-center'>LDAP_ADMINS_GROUP isn't set</p></div>\n";
 }
 
 if ($errors != "") {
