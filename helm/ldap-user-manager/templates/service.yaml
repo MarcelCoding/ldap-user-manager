@@ -10,15 +10,15 @@ metadata:
     heritage: Tiller
 spec:
   ports:
-    - port: {{ .Values.service.httpPort }}
+    - port: { { .Values.service.httpPort } }
       targetPort: 80
       protocol: TCP
       name: http
-    - port: {{ .Values.service.httpsPort }}
+    - port: { { .Values.service.httpsPort } }
       targetPort: 443
       protocol: TCP
       name: https
-  type: {{ .Values.service.type }}
+  type: { { .Values.service.type } }
   selector:
     app: ldap-user-manager
     release: ldap-user-manager
