@@ -121,7 +121,6 @@ function validate_passkey_cookie()
 
 }
 
-
 ######################################################
 
 function log_out($method = 'normal')

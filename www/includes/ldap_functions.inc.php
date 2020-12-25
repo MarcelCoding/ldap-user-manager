@@ -128,24 +128,6 @@ function ldap_auth_username($ldap_connection, $username, $password)
 
 }
 
-#################################
-
-function generate_salt($length)
-{
-
-    $permitted_chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ./';
-
-    mt_srand((double)microtime() * 1000000);
-
-    $salt = '';
-    while (strlen($salt) < $length) {
-        $salt .= substr($permitted_chars, (rand() % strlen($permitted_chars)), 1);
-    }
-
-    return $salt;
-
-}
-
 ##################################
 
 function ldap_hashed_password($password)
@@ -188,6 +170,30 @@ function ldap_change_password($ldap_connection, $username, $new_password)
         return TRUE;
     }
 
+}
+
+function ldap_get_ssh_key($ldap_connection, $username)
+{
+    global $log_prefix, $LDAP, $LDAP_DEBUG;
+
+    #Find DN of user
+
+    $ldap_search_query = "${LDAP['account_attribute']}=" . ldap_escape($username, "", LDAP_ESCAPE_FILTER);
+    $ldap_search = @ ldap_search($ldap_connection, $LDAP['base_dn'], $ldap_search_query);
+    if ($ldap_search) {
+        $result = @ ldap_get_entries($ldap_connection, $ldap_search);
+        if ($result["count"] == 1) {
+            $this_dn = $result[0]['dn'];
+        } else {
+            error_log("$log_prefix Couldn't find the DN for user $username");
+            return FALSE;
+        }
+    } else {
+        error_log("$log_prefix Couldn't perform an LDAP search for ${LDAP['account_attribute']}=${username}: " . ldap_error($ldap_connection), 0);
+        return FALSE;
+    }
+
+    return ldap_get_entries($ldap_connection, ldap_read($ldap_connection, $this_dn, "(objectclass=*)", array("sshPublicKey")))[0]["sshpublickey"][0];
 }
 
 function ldap_change_ssh_key($ldap_connection, $username, $ssh_key)

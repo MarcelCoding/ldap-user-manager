@@ -7,8 +7,9 @@ include_once "ldap_functions.inc.php";
 
 set_page_access("user");
 
+$ldap_connection = open_ldap_connection();
+
 if (isset($_POST['change_ssh_key'])) {
-    $ldap_connection = open_ldap_connection();
     ldap_change_ssh_key($ldap_connection, $USER_ID, $_POST['ssh_key']) or die("change_ssh_key_failed() failed.");
 
     render_header("SSH Key changed");
@@ -38,7 +39,9 @@ render_header('Change your LDAP SSH Key');
                     <div class="form-group" id="ssh_key_div">
                         <label for="ssh_key" class="col-sm-4 control-label">SSH Key</label>
                         <div class="col-sm-6">
-                            <textarea class="form-control" id="ssh_key" name="ssh_key"></textarea>
+                            <textarea class="form-control" id="ssh_key"
+                                      placeholder="Begins with 'ssh-rsa', 'ssh-ed25519', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', or 'ecdsa-sha2-nistp521'"
+                                      name="ssh_key"><?php echo ldap_get_ssh_key($ldap_connection, $USER_ID); ?></textarea>
                         </div>
                     </div>
 
