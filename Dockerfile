@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine:3.13
 
 RUN apk add --update --no-cache php7-apache2 php7-ldap \
  && rm -rf /var/www/localhost/htdocs/*
